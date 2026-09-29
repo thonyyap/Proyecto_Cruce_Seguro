@@ -66,12 +66,10 @@ class AlertService(private val context: Context) : TextToSpeech.OnInitListener {
             context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
         if (!vibrator.hasVibrator()) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator.hasAmplitudeControl()) {
+        if (vibrator.hasAmplitudeControl()) {
             vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createWaveform(timings, -1))
         } else {
-            vibrator.vibrate(timings, -1)
+            vibrator.vibrate(VibrationEffect.createWaveform(timings, -1))
         }
     }
 
