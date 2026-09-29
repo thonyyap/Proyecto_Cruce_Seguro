@@ -24,14 +24,15 @@ class DecisionEngineTest {
 
     @Test
     fun `all input conditions are required`() {
-        val invalidInputs = listOf(
-            validInput(0, walking = false),
-            validInput(0, sensorsRecent = false),
-            validInput(0, distanceMeters = 31.0),
-            validInput(0, distanceMeters = null),
-            validInput(0, approaching = false),
-            validInput(0, locationAccurate = false),
-        )
+        val invalidInputs =
+            listOf(
+                validInput(0, walking = false),
+                validInput(0, sensorsRecent = false),
+                validInput(0, distanceMeters = 31.0),
+                validInput(0, distanceMeters = null),
+                validInput(0, approaching = false),
+                validInput(0, locationAccurate = false),
+            )
 
         invalidInputs.forEach { input ->
             assertFalse(DecisionEngine().evaluate(input).shouldAlert)

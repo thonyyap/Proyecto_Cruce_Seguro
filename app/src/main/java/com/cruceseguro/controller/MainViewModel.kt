@@ -27,7 +27,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
+class MainViewModel(
+    application: Application,
+) : AndroidViewModel(application) {
     private val sensorService = SensorService(application)
     private val locationService = LocationService(application)
     private val alertService = AlertService(application)
@@ -58,24 +60,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         approachDetector.reset()
         decisionEngine.reset()
         walkingDetector.reset()
-        _uiState.value = _uiState.value.copy(
-            mode = mode,
-            distanceMeters = if (mode == AppMode.SIMULATED) _uiState.value.simulatedDistanceMeters else realDistance(),
-            approaching = false,
-            nearCrossing = false,
-            criticalAlertVisible = false,
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                mode = mode,
+                distanceMeters = if (mode == AppMode.SIMULATED) _uiState.value.simulatedDistanceMeters else realDistance(),
+                approaching = false,
+                nearCrossing = false,
+                criticalAlertVisible = false,
+            )
         processDecision()
     }
 
     fun setSimulatedDistance(distanceMeters: Double) {
         val clamped = distanceMeters.coerceIn(0.0, 50.0)
         val approaching = approachDetector.addDistance(clamped)
-        _uiState.value = _uiState.value.copy(
-            simulatedDistanceMeters = clamped,
-            distanceMeters = if (_uiState.value.mode == AppMode.SIMULATED) clamped else _uiState.value.distanceMeters,
-            approaching = if (_uiState.value.mode == AppMode.SIMULATED) approaching else _uiState.value.approaching,
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                simulatedDistanceMeters = clamped,
+                distanceMeters = if (_uiState.value.mode == AppMode.SIMULATED) clamped else _uiState.value.distanceMeters,
+                approaching = if (_uiState.value.mode == AppMode.SIMULATED) approaching else _uiState.value.approaching,
+            )
         if (_uiState.value.mode == AppMode.SIMULATED) processDecision()
     }
 
@@ -96,31 +100,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         crossing = CrossingLocation(latitude, longitude)
         approachDetector.reset()
         decisionEngine.reset()
-        _uiState.value = _uiState.value.copy(
-            crossingCreated = true,
-            distanceMeters = realDistance(),
-            approaching = false,
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                crossingCreated = true,
+                distanceMeters = realDistance(),
+                approaching = false,
+            )
         processDecision()
         return true
     }
 
     fun refreshLocationPermission() = locationService.refreshPermissionState()
 
-    private fun startSimulation(motion: SimulationMotion, delta: Double) {
+    private fun startSimulation(
+        motion: SimulationMotion,
+        delta: Double,
+    ) {
         if (_uiState.value.mode != AppMode.SIMULATED) return
         simulationJob?.cancel()
         _uiState.value = _uiState.value.copy(simulationMotion = motion)
-        simulationJob = viewModelScope.launch {
-            while (true) {
-                setSimulatedDistance(_uiState.value.simulatedDistanceMeters + delta)
-                if (_uiState.value.simulatedDistanceMeters == 0.0 || _uiState.value.simulatedDistanceMeters == 50.0) {
-                    stopSimulation()
-                    break
+        simulationJob =
+            viewModelScope.launch {
+                while (true) {
+                    setSimulatedDistance(_uiState.value.simulatedDistanceMeters + delta)
+                    if (_uiState.value.simulatedDistanceMeters == 0.0 || _uiState.value.simulatedDistanceMeters == 50.0) {
+                        stopSimulation()
+                        break
+                    }
+                    delay(250L)
                 }
-                delay(250L)
             }
-        }
     }
 
     private fun onSensorSnapshot(snapshot: SensorSnapshot) {
@@ -129,21 +138,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         var variation = _uiState.value.accelerationVariation
         if (snapshot.accelerometerTimestampMs != null && snapshot.accelerometerTimestampMs != lastProcessedAccelerationMs) {
             lastProcessedAccelerationMs = snapshot.accelerometerTimestampMs
-            val state = walkingDetector.addSample(
-                WalkingSample(snapshot.accelerationX, snapshot.accelerationY, snapshot.accelerationZ),
-            )
+            val state =
+                walkingDetector.addSample(
+                    WalkingSample(snapshot.accelerationX, snapshot.accelerationY, snapshot.accelerationZ),
+                )
             walking = state.isWalking
             variation = state.variation
         }
-        _uiState.value = _uiState.value.copy(
-            walking = walking,
-            accelerationVariation = variation,
-            accelerometerStatus = snapshot.accelerometerStatus,
-            gyroscopeStatus = snapshot.gyroscopeStatus,
-            gyroscopeX = snapshot.gyroscopeX,
-            gyroscopeY = snapshot.gyroscopeY,
-            gyroscopeZ = snapshot.gyroscopeZ,
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                walking = walking,
+                accelerationVariation = variation,
+                accelerometerStatus = snapshot.accelerometerStatus,
+                gyroscopeStatus = snapshot.gyroscopeStatus,
+                gyroscopeX = snapshot.gyroscopeX,
+                gyroscopeY = snapshot.gyroscopeY,
+                gyroscopeZ = snapshot.gyroscopeZ,
+            )
         processDecision()
     }
 
@@ -151,12 +162,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         latestLocation = snapshot
         val distance = if (_uiState.value.mode == AppMode.REAL) realDistance() else _uiState.value.distanceMeters
         val approaching = if (_uiState.value.mode == AppMode.REAL) approachDetector.addDistance(distance) else _uiState.value.approaching
-        _uiState.value = _uiState.value.copy(
-            gpsStatus = snapshot.status,
-            gpsAccuracyMeters = snapshot.accuracyMeters,
-            distanceMeters = distance,
-            approaching = approaching,
-        )
+        _uiState.value =
+            _uiState.value.copy(
+                gpsStatus = snapshot.status,
+                gpsAccuracyMeters = snapshot.accuracyMeters,
+                distanceMeters = distance,
+                approaching = approaching,
+            )
         processDecision()
     }
 
@@ -165,24 +177,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         val distance = state.distanceMeters
         val level = classifyProximity(distance)
-        val sensorRecent = latestSensors.accelerometerTimestampMs?.let { now - it <= SENSOR_FRESHNESS_MS } == true &&
-            latestSensors.gyroscopeTimestampMs?.let { now - it <= SENSOR_FRESHNESS_MS } == true
-        val locationAccurate = state.mode == AppMode.SIMULATED ||
-            (latestLocation.status == Availability.AVAILABLE && (latestLocation.accuracyMeters ?: Float.MAX_VALUE) <= MAX_GPS_ACCURACY_METERS)
-        val decision = decisionEngine.evaluate(
-            DecisionInput(
-                walking = state.walking,
-                sensorsRecent = sensorRecent,
-                distanceMeters = distance,
-                approaching = state.approaching,
-                locationAccurate = locationAccurate,
-                timestampMs = now,
-            ),
-        )
-        _uiState.value = state.copy(
-            proximityLevel = level,
-            nearCrossing = level in ALERT_LEVELS,
-        )
+        val sensorRecent =
+            latestSensors.accelerometerTimestampMs?.let { now - it <= SENSOR_FRESHNESS_MS } == true &&
+                latestSensors.gyroscopeTimestampMs?.let { now - it <= SENSOR_FRESHNESS_MS } == true
+        val locationAccurate =
+            state.mode == AppMode.SIMULATED ||
+                (
+                    latestLocation.status == Availability.AVAILABLE &&
+                        (latestLocation.accuracyMeters ?: Float.MAX_VALUE) <= MAX_GPS_ACCURACY_METERS
+                )
+        val decision =
+            decisionEngine.evaluate(
+                DecisionInput(
+                    walking = state.walking,
+                    sensorsRecent = sensorRecent,
+                    distanceMeters = distance,
+                    approaching = state.approaching,
+                    locationAccurate = locationAccurate,
+                    timestampMs = now,
+                ),
+            )
+        _uiState.value =
+            state.copy(
+                proximityLevel = level,
+                nearCrossing = level in ALERT_LEVELS,
+            )
         if (decision.shouldAlert) {
             alertService.alert(decision.level)
             if (decision.level == ProximityLevel.CRITICAL) showCriticalAlert()
@@ -192,10 +211,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun showCriticalAlert() {
         criticalJob?.cancel()
         _uiState.value = _uiState.value.copy(criticalAlertVisible = true)
-        criticalJob = viewModelScope.launch {
-            delay(5_000L)
-            _uiState.value = _uiState.value.copy(criticalAlertVisible = false)
-        }
+        criticalJob =
+            viewModelScope.launch {
+                delay(5_000L)
+                _uiState.value = _uiState.value.copy(criticalAlertVisible = false)
+            }
     }
 
     private fun realDistance(): Double? {

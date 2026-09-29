@@ -70,10 +70,11 @@ class DecisionEngine(
     }
 
     private companion object {
-        val ALERT_LEVELS = setOf(
-            ProximityLevel.PREVENTIVE,
-            ProximityLevel.NEAR,
-            ProximityLevel.CRITICAL,
-        )
+        val ALERT_LEVELS =
+            setOf(
+                ProximityLevel.PREVENTIVE,
+                ProximityLevel.NEAR,
+                ProximityLevel.CRITICAL,
+            )
     }
 }

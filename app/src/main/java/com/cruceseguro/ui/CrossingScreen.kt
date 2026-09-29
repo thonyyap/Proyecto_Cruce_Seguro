@@ -15,14 +15,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.GpsFixed
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -75,10 +72,11 @@ fun CrossingScreen(
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text("Cruce Seguro Accesible", style = MaterialTheme.typography.titleLarge)
@@ -103,15 +101,19 @@ fun CrossingScreen(
 }
 
 @Composable
-private fun ModeSelector(mode: AppMode, onModeChange: (AppMode) -> Unit) {
+private fun ModeSelector(
+    mode: AppMode,
+    onModeChange: (AppMode) -> Unit,
+) {
     AccessibleCard(title = "Modo de funcionamiento") {
         AppMode.entries.forEach { option ->
             val label = if (option == AppMode.SIMULATED) "Simulado" else "Real con GPS"
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .requiredHeightIn(min = 56.dp)
-                    .semantics { role = Role.RadioButton },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .requiredHeightIn(min = 56.dp)
+                        .semantics { role = Role.RadioButton },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 RadioButton(selected = mode == option, onClick = { onModeChange(option) })
@@ -124,19 +126,21 @@ private fun ModeSelector(mode: AppMode, onModeChange: (AppMode) -> Unit) {
 @Composable
 private fun DistanceCard(state: MainUiState) {
     val distanceText = state.distanceMeters?.let { String.format(Locale.getDefault(), "%.1f m", it) } ?: "Sin cruce"
-    val levelText = when (state.proximityLevel) {
-        ProximityLevel.CRITICAL -> "Crítico"
-        ProximityLevel.NEAR -> "Cercano"
-        ProximityLevel.PREVENTIVE -> "Preventivo"
-        ProximityLevel.CLEAR -> "Fuera de zona"
-        ProximityLevel.UNAVAILABLE -> "No disponible"
-    }
+    val levelText =
+        when (state.proximityLevel) {
+            ProximityLevel.CRITICAL -> "Crítico"
+            ProximityLevel.NEAR -> "Cercano"
+            ProximityLevel.PREVENTIVE -> "Preventivo"
+            ProximityLevel.CLEAR -> "Fuera de zona"
+            ProximityLevel.UNAVAILABLE -> "No disponible"
+        }
     AccessibleCard(title = "Distancia al cruce") {
         Text(
             distanceText,
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics { contentDescription = "Distancia al cruce: $distanceText" },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "Distancia al cruce: $distanceText" },
             style = MaterialTheme.typography.headlineLarge,
             textAlign = TextAlign.Center,
             color = levelColor(state.proximityLevel),
@@ -155,12 +159,16 @@ private fun ConditionsCard(state: MainUiState) {
 }
 
 @Composable
-private fun ConditionRow(label: String, active: Boolean) {
+private fun ConditionRow(
+    label: String,
+    active: Boolean,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .semantics { contentDescription = "$label: ${if (active) "sí" else "no"}" },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .semantics { contentDescription = "$label: ${if (active) "sí" else "no"}" },
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(label)
@@ -181,9 +189,10 @@ private fun SimulationControls(
             value = state.simulatedDistanceMeters.toFloat(),
             onValueChange = { onDistanceChange(it.toDouble()) },
             valueRange = 0f..50f,
-            modifier = Modifier.semantics {
-                contentDescription = "Distancia simulada, ${state.simulatedDistanceMeters.toInt()} metros"
-            },
+            modifier =
+                Modifier.semantics {
+                    contentDescription = "Distancia simulada, ${state.simulatedDistanceMeters.toInt()} metros"
+                },
         )
         LargeButton("Auto-acercar", state.simulationMotion == SimulationMotion.APPROACHING, onAutoApproach)
         LargeButton("Alejar", state.simulationMotion == SimulationMotion.MOVING_AWAY, onMoveAway)
@@ -229,7 +238,10 @@ private fun DebugSection(state: MainUiState) {
 }
 
 @Composable
-private fun AccessibleCard(title: String, content: @Composable () -> Unit) {
+private fun AccessibleCard(
+    title: String,
+    content: @Composable () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -243,16 +255,22 @@ private fun AccessibleCard(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun LargeButton(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun LargeButton(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .requiredHeightIn(min = 56.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (selected) SuccessGreen else SafetyYellow,
-            contentColor = if (selected) AccessibleWhite else AccessibleBlack,
-        ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .requiredHeightIn(min = 56.dp),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = if (selected) SuccessGreen else SafetyYellow,
+                contentColor = if (selected) AccessibleWhite else AccessibleBlack,
+            ),
     ) {
         Text(label, fontSize = 18.sp, fontWeight = FontWeight.Bold)
     }
@@ -261,13 +279,14 @@ private fun LargeButton(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun CriticalOverlay() {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AccessibleBlack)
-            .semantics {
-                liveRegion = LiveRegionMode.Assertive
-                contentDescription = "Alerta crítica. Cruce peatonal inmediato. Deténgase y verifique antes de cruzar."
-            },
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(AccessibleBlack)
+                .semantics {
+                    liveRegion = LiveRegionMode.Assertive
+                    contentDescription = "Alerta crítica. Cruce peatonal inmediato. Deténgase y verifique antes de cruzar."
+                },
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -289,19 +308,21 @@ private fun CriticalOverlay() {
     }
 }
 
-private fun availabilityText(status: Availability): String = when (status) {
-    Availability.AVAILABLE -> "disponible"
-    Availability.UNAVAILABLE -> "no disponible"
-    Availability.PERMISSION_REQUIRED -> "requiere permiso"
-    Availability.DISABLED -> "desactivado"
-}
+private fun availabilityText(status: Availability): String =
+    when (status) {
+        Availability.AVAILABLE -> "disponible"
+        Availability.UNAVAILABLE -> "no disponible"
+        Availability.PERMISSION_REQUIRED -> "requiere permiso"
+        Availability.DISABLED -> "desactivado"
+    }
 
-private fun levelColor(level: ProximityLevel): Color = when (level) {
-    ProximityLevel.CRITICAL -> ErrorRed
-    ProximityLevel.NEAR -> WarningOrange
-    ProximityLevel.PREVENTIVE -> SafetyYellow
-    ProximityLevel.CLEAR -> Color(0xFF77DD77)
-    ProximityLevel.UNAVAILABLE -> AccessibleWhite
-}
+private fun levelColor(level: ProximityLevel): Color =
+    when (level) {
+        ProximityLevel.CRITICAL -> ErrorRed
+        ProximityLevel.NEAR -> WarningOrange
+        ProximityLevel.PREVENTIVE -> SafetyYellow
+        ProximityLevel.CLEAR -> Color(0xFF77DD77)
+        ProximityLevel.UNAVAILABLE -> AccessibleWhite
+    }
 
 private fun format(value: Double): String = String.format(Locale.getDefault(), "%.2f", value)

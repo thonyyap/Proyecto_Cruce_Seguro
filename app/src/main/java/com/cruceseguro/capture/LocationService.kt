@@ -20,24 +20,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class LocationService(private val context: Context) {
+class LocationService(
+    private val context: Context,
+) {
     private val client: FusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(context)
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private val _snapshots = MutableStateFlow(LocationSnapshot())
     val snapshots: StateFlow<LocationSnapshot> = _snapshots.asStateFlow()
 
-    private val callback = object : LocationCallback() {
-        override fun onLocationResult(result: LocationResult) {
-            val location = result.lastLocation ?: return
-            _snapshots.value = LocationSnapshot(
-                status = Availability.AVAILABLE,
-                latitude = location.latitude,
-                longitude = location.longitude,
-                accuracyMeters = location.accuracy,
-                timestampMs = SystemClock.elapsedRealtime(),
-            )
+    private val callback =
+        object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                val location = result.lastLocation ?: return
+                _snapshots.value =
+                    LocationSnapshot(
+                        status = Availability.AVAILABLE,
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        accuracyMeters = location.accuracy,
+                        timestampMs = SystemClock.elapsedRealtime(),
+                    )
+            }
         }
-    }
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -49,9 +53,11 @@ class LocationService(private val context: Context) {
             _snapshots.value = LocationSnapshot(status = Availability.DISABLED)
             return
         }
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1_000L)
-            .setMinUpdateIntervalMillis(500L)
-            .build()
+        val request =
+            LocationRequest
+                .Builder(Priority.PRIORITY_HIGH_ACCURACY, 1_000L)
+                .setMinUpdateIntervalMillis(500L)
+                .build()
         client.requestLocationUpdates(request, callback, Looper.getMainLooper())
     }
 

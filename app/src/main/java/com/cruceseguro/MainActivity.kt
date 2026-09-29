@@ -16,13 +16,15 @@ import com.cruceseguro.ui.theme.CruceSeguroTheme
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels { MainViewModelFactory(application) }
 
-    private val locationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { viewModel.refreshLocationPermission() }
+    private val locationPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) { viewModel.refreshLocationPermission() }
 
-    private val cameraPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { /* El flash es opcional; la aplicación continúa aunque se deniegue. */ }
+    private val cameraPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { /* El flash es opcional; la aplicación continúa aunque se deniegue. */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
