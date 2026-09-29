@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,33 +72,40 @@ fun CrossingScreen(
     onRequestLocation: () -> Unit,
     onRequestCamera: () -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text("Cruce Seguro Accesible", style = MaterialTheme.typography.titleLarge)
-            Text(
-                "Prototipo de apoyo. Verifique siempre el tránsito antes de cruzar.",
-                color = SafetyYellow,
-            )
-            ModeSelector(state.mode, onModeChange)
-            DistanceCard(state)
-            ConditionsCard(state)
-            if (state.mode == AppMode.SIMULATED) {
-                SimulationControls(state, onSimulatedDistanceChange, onAutoApproach, onMoveAway, onStop)
-            } else {
-                RealModeControls(state, onCreateCrossing, onRequestLocation, onRequestCamera)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .safeDrawingPadding()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text("Cruce Seguro Accesible", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    "Prototipo de apoyo. Verifique siempre el tránsito antes de cruzar.",
+                    color = SafetyYellow,
+                )
+                ModeSelector(state.mode, onModeChange)
+                DistanceCard(state)
+                ConditionsCard(state)
+                if (state.mode == AppMode.SIMULATED) {
+                    SimulationControls(state, onSimulatedDistanceChange, onAutoApproach, onMoveAway, onStop)
+                } else {
+                    RealModeControls(state, onCreateCrossing, onRequestLocation, onRequestCamera)
+                }
+                DebugSection(state)
+                Spacer(Modifier.height(16.dp))
             }
-            DebugSection(state)
-            Spacer(Modifier.height(16.dp))
-        }
 
-        if (state.criticalAlertVisible) CriticalOverlay()
+            if (state.criticalAlertVisible) CriticalOverlay()
+        }
     }
 }
 

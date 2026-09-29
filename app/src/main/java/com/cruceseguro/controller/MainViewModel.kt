@@ -18,8 +18,10 @@ import com.cruceseguro.model.CrossingLocation
 import com.cruceseguro.model.LocationSnapshot
 import com.cruceseguro.model.SensorSnapshot
 import com.cruceseguro.processing.ApproachDetector
+import com.cruceseguro.processing.SimulationSession
 import com.cruceseguro.processing.WalkingDetector
 import com.cruceseguro.processing.WalkingSample
+import com.cruceseguro.processing.isLocationUsable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +37,7 @@ class MainViewModel(
     private val alertService = AlertService(application)
     private val walkingDetector = WalkingDetector()
     private val approachDetector = ApproachDetector()
+    private val simulationSession = SimulationSession()
     private val decisionEngine = DecisionEngine()
 
     private val _uiState = MutableStateFlow(MainUiState())
@@ -48,16 +51,29 @@ class MainViewModel(
     private var criticalJob: Job? = null
 
     init {
-        sensorService.start()
-        locationService.start()
         viewModelScope.launch { sensorService.snapshots.collect(::onSensorSnapshot) }
         viewModelScope.launch { locationService.snapshots.collect(::onLocationSnapshot) }
+    }
+
+    fun onForeground() {
+        resetTransientSignals()
+        sensorService.start()
+        locationService.start()
+    }
+
+    fun onBackground() {
+        stopSimulation()
+        sensorService.stop()
+        locationService.stop()
+        alertService.stopActiveOutputs()
+        resetTransientSignals()
     }
 
     fun setMode(mode: AppMode) {
         if (_uiState.value.mode == mode) return
         stopSimulation()
         approachDetector.reset()
+        simulationSession.reset()
         decisionEngine.reset()
         walkingDetector.reset()
         _uiState.value =
@@ -73,7 +89,7 @@ class MainViewModel(
 
     fun setSimulatedDistance(distanceMeters: Double) {
         val clamped = distanceMeters.coerceIn(0.0, 50.0)
-        val approaching = approachDetector.addDistance(clamped)
+        val approaching = simulationSession.updateDistance(clamped, SystemClock.elapsedRealtime())
         _uiState.value =
             _uiState.value.copy(
                 simulatedDistanceMeters = clamped,
@@ -90,7 +106,13 @@ class MainViewModel(
     fun stopSimulation() {
         simulationJob?.cancel()
         simulationJob = null
-        _uiState.value = _uiState.value.copy(simulationMotion = SimulationMotion.STOPPED)
+        simulationSession.stop()
+        decisionEngine.reset()
+        _uiState.value =
+            _uiState.value.copy(
+                simulationMotion = SimulationMotion.STOPPED,
+                approaching = if (_uiState.value.mode == AppMode.SIMULATED) false else _uiState.value.approaching,
+            )
     }
 
     fun createCrossingHere(): Boolean {
@@ -180,19 +202,27 @@ class MainViewModel(
         val sensorRecent =
             latestSensors.accelerometerTimestampMs?.let { now - it <= SENSOR_FRESHNESS_MS } == true &&
                 latestSensors.gyroscopeTimestampMs?.let { now - it <= SENSOR_FRESHNESS_MS } == true
+        val approaching =
+            if (state.mode == AppMode.SIMULATED) {
+                simulationSession.isApproaching(now)
+            } else {
+                state.approaching
+            }
         val locationAccurate =
-            state.mode == AppMode.SIMULATED ||
-                (
-                    latestLocation.status == Availability.AVAILABLE &&
-                        (latestLocation.accuracyMeters ?: Float.MAX_VALUE) <= MAX_GPS_ACCURACY_METERS
-                )
+            isLocationUsable(
+                mode = state.mode,
+                status = latestLocation.status,
+                accuracyMeters = latestLocation.accuracyMeters,
+                fixTimestampMs = latestLocation.timestampMs,
+                nowMs = now,
+            )
         val decision =
             decisionEngine.evaluate(
                 DecisionInput(
                     walking = state.walking,
                     sensorsRecent = sensorRecent,
                     distanceMeters = distance,
-                    approaching = state.approaching,
+                    approaching = approaching,
                     locationAccurate = locationAccurate,
                     timestampMs = now,
                 ),
@@ -201,6 +231,7 @@ class MainViewModel(
             state.copy(
                 proximityLevel = level,
                 nearCrossing = level in ALERT_LEVELS,
+                approaching = approaching,
             )
         if (decision.shouldAlert) {
             alertService.alert(decision.level)
@@ -227,6 +258,21 @@ class MainViewModel(
         return results[0].toDouble()
     }
 
+    private fun resetTransientSignals() {
+        approachDetector.reset()
+        simulationSession.reset()
+        decisionEngine.reset()
+        walkingDetector.reset()
+        lastProcessedAccelerationMs = null
+        _uiState.value =
+            _uiState.value.copy(
+                walking = false,
+                approaching = false,
+                accelerationVariation = 0.0,
+                criticalAlertVisible = false,
+            )
+    }
+
     override fun onCleared() {
         simulationJob?.cancel()
         criticalJob?.cancel()
@@ -238,7 +284,6 @@ class MainViewModel(
 
     private companion object {
         const val SENSOR_FRESHNESS_MS = 2_000L
-        const val MAX_GPS_ACCURACY_METERS = 25f
         val ALERT_LEVELS = setOf(ProximityLevel.PREVENTIVE, ProximityLevel.NEAR, ProximityLevel.CRITICAL)
     }
 }

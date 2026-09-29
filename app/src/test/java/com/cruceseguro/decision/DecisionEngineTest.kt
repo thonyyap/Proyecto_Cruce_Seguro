@@ -35,7 +35,9 @@ class DecisionEngineTest {
             )
 
         invalidInputs.forEach { input ->
-            assertFalse(DecisionEngine().evaluate(input).shouldAlert)
+            val engine = DecisionEngine()
+            assertFalse(engine.evaluate(input).shouldAlert)
+            assertFalse(engine.evaluate(input.copy(timestampMs = 1_500)).shouldAlert)
         }
     }
 
@@ -83,6 +85,18 @@ class DecisionEngineTest {
 
         assertFalse(engine.evaluate(validInput(1600)).shouldAlert)
         assertTrue(engine.evaluate(validInput(3100)).shouldAlert)
+    }
+
+    @Test
+    fun `reset clears a pending persistence window`() {
+        val engine = DecisionEngine()
+        engine.evaluate(validInput(0))
+        engine.evaluate(validInput(1_000))
+
+        engine.reset()
+
+        assertFalse(engine.evaluate(validInput(1_500)).shouldAlert)
+        assertTrue(engine.evaluate(validInput(3_000)).shouldAlert)
     }
 
     @Test

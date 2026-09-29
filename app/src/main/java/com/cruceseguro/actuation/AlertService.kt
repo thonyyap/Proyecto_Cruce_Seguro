@@ -37,9 +37,13 @@ class AlertService(
     }
 
     fun close() {
+        stopActiveOutputs()
+        runCatching { tts.shutdown() }
+    }
+
+    fun stopActiveOutputs() {
         handler.removeCallbacksAndMessages(null)
         runCatching { tts.stop() }
-        runCatching { tts.shutdown() }
         runCatching { setTorch(false) }
     }
 

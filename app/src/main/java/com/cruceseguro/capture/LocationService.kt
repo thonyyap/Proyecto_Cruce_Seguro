@@ -2,7 +2,10 @@ package com.cruceseguro.capture
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Looper
@@ -27,6 +30,22 @@ class LocationService(
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
     private val _snapshots = MutableStateFlow(LocationSnapshot())
     val snapshots: StateFlow<LocationSnapshot> = _snapshots.asStateFlow()
+    private var receiverRegistered = false
+
+    private val providerReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                    start()
+                } else {
+                    client.removeLocationUpdates(callback)
+                    _snapshots.value = LocationSnapshot(status = Availability.DISABLED)
+                }
+            }
+        }
 
     private val callback =
         object : LocationCallback() {
@@ -45,6 +64,15 @@ class LocationService(
 
     @SuppressLint("MissingPermission")
     fun start() {
+        if (!receiverRegistered) {
+            ContextCompat.registerReceiver(
+                context,
+                providerReceiver,
+                IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION),
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            receiverRegistered = true
+        }
         if (!hasLocationPermission()) {
             _snapshots.value = LocationSnapshot(status = Availability.PERMISSION_REQUIRED)
             return
@@ -58,12 +86,24 @@ class LocationService(
                 .Builder(Priority.PRIORITY_HIGH_ACCURACY, 1_000L)
                 .setMinUpdateIntervalMillis(500L)
                 .build()
-        client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+        client.removeLocationUpdates(callback)
+        client
+            .requestLocationUpdates(request, callback, Looper.getMainLooper())
+            .addOnFailureListener {
+                _snapshots.value = LocationSnapshot(status = Availability.UNAVAILABLE)
+            }
     }
 
     fun refreshPermissionState() = start()
 
-    fun stop() = client.removeLocationUpdates(callback)
+    fun stop() {
+        client.removeLocationUpdates(callback)
+        if (receiverRegistered) {
+            runCatching { context.unregisterReceiver(providerReceiver) }
+            receiverRegistered = false
+        }
+        _snapshots.value = LocationSnapshot(status = Availability.UNAVAILABLE)
+    }
 
     private fun hasLocationPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
