@@ -8,7 +8,9 @@ Prototipo académico Android que advierte a una persona con discapacidad visual 
 
 La implementación es **Android nativa con Kotlin y Jetpack Compose**. Durante la definición del proyecto se eligió Android nativo porque Flutter no era obligatorio para el Taller 2. No utiliza Firebase, Google Maps, backend, login ni servicios pagos.
 
+
 Requisitos principales:
+
 
 - Android Studio Quail o compatible.
 - Android SDK 37 y Build Tools 36.0.0.
